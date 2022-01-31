@@ -1,22 +1,35 @@
-asm_source_files_x86 = $(shell find src/x86/boot/ -name *.asm)
-asm_object_files_x86 = $(patsubst src/x86/boot/%.asm, build/x86/boot/%.o, $(asm_source_files_x86))
+TARGET?=x86
+
+ifeq ($(TARGET),x86)
+	NASM_PARAMS=elf32
+endif
+ifeq ($(TARGET),x86_64)
+	NASM_PARAMS=elf64
+endif
+
+ifeq ($(TARGET),x86)
+	LD_PARAMS=-melf_i386
+endif
 
 
-default: kOS_x86.iso;
+default: kOS_$(TARGET).iso
 
-$(asm_object_files_x86): build/x86/boot/%.o : src/x86/boot/%.asm
-	mkdir -p build/x86/boot
-	nasm -f elf32 $< -o $@
+asm_source_files = $(shell find src/$(TARGET)/boot/ -name *.asm)
+asm_object_files = $(patsubst src/$(TARGET)/boot/%.asm, build/$(TARGET)/boot/%.o, $(asm_source_files))
+
+$(asm_object_files): build/$(TARGET)/boot/%.o : src/$(TARGET)/boot/%.asm
+	mkdir -p build/$(TARGET)/boot
+	nasm -f $(NASM_PARAMS) $< -o $@
 	
-kkernel_x86.bin: src/x86/linker/linker.ld $(asm_object_files_x86) 
-	ld -melf_i386 -o $@ -T $< $(asm_object_files_x86)
-	mv kkernel_x86.bin targets/x86/iso/boot
+kkernel_$(TARGET).bin: src/$(TARGET)/linker/linker.ld $(asm_object_files) 
+	ld $(LD_PARAMS) -o $@ -T $< $(asm_object_files)
+	mv $@ targets/$(TARGET)/iso/boot
 	
-kOS_x86.iso: kkernel_x86.bin
-	grub-mkrescue -o $@ targets/x86/iso
+kOS_$(TARGET).iso: kkernel_$(TARGET).bin
+	grub-mkrescue -o $@ targets/$(TARGET)/iso
 	
 
 clean:
-	rm -rf build/x86
-	find . -name "*x86.iso" -type f -delete
-	find targets/x86 -name "*.bin" -type f -delete
+	rm -rf build/$(TARGET)
+	find . -name "*$(TARGET).iso" -type f -delete
+	find targets/$(TARGET) -name "*.bin" -type f -delete
