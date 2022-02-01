@@ -17,16 +17,13 @@ header_start:
 header_end:
 
 global loader
+extern kmain
 
 section .text
 loader:
-    ; print Hello World!
-	mov dword [0xb8000], 0x2f652f48 ; He
-    mov dword [0xb8004], 0x2f6c2f6c ; ll
-    mov dword [0xb8008], 0x2f202f6f ; o 
-    mov dword [0xb800c], 0x2f6f2f57 ; Wo
-    mov dword [0xb8010], 0x2f6c2f72 ; rl
-    mov dword [0xb8014], 0x2f212f64 ; d!
+	mov esp, stack_top
+	call kmain
+
 	hlt
 
 
@@ -34,3 +31,8 @@ _stop:
     cli
     hlt
     jmp _stop
+
+section .bss
+stack_bottom:
+	resb 2*1024*1024 ; 2MiB
+stack_top:
